@@ -7,6 +7,7 @@ from mesa.datacollection import DataCollector
 import numpy as np
 import math
 
+
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
         super().__init__(unique_id, model)
@@ -25,11 +26,9 @@ class Cargador(Agent):
         self.carga = 100
         self.ocupada = False
 
-    def pos_cargador(M, N, num_cuadrantes_x, num_cuadrantes_y, i, j):
-        tamaño_m = M // num_cuadrantes_x
-        tamaño_n = N // num_cuadrantes_y
-        pos_x = tamaño_m * i + tamaño_m // 2
-        pos_y = tamaño_n * j + tamaño_n // 2
+    def pos_cargador(i, j):
+        pos_x = i
+        pos_y = j
         return pos_x, pos_y
     
     def set_ocupada(self, value):
@@ -268,12 +267,12 @@ class Habitacion(Model):
         )
 
         # Posicionamiento de cargadores
-        for i in range(num_cuadrantesX):
-            for j in range(num_cuadrantesY):
-                pos_x, pos_y = Cargador.pos_cargador(M, N, num_cuadrantesX, num_cuadrantesY, i, j)
-                cargador = Cargador(f"{i * num_cuadrantesY + j}", self)
-                self.schedule.add(cargador)
-                self.grid.place_agent(cargador, (pos_x, pos_y))
+        ubicaciones_cargadores_x = {23, 24, 25, 26, 27}
+        for pos in ubicaciones_cargadores_x:
+            pos_x, pos_y = Cargador.pos_cargador(pos, 49) #eliminar para que no haga llamadas innecesarias xd
+            cargador = Cargador(f"{pos_x}", self)
+            self.schedule.add(cargador)
+            self.grid.place_agent(cargador, (pos_x, pos_y))
 
     def step(self):
         if self.todoLimpio():

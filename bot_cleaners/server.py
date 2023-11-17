@@ -4,7 +4,7 @@ import mesa
 
 from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador
 
-MAX_NUMBER_ROBOTS = 20
+MAX_NUMBER_ROBOTS = 10
 
 
 def agent_portrayal(agent):
@@ -29,7 +29,7 @@ def agent_portrayal(agent):
 
 
 grid = mesa.visualization.CanvasGrid(
-    agent_portrayal, 20, 20, 400, 400)
+    agent_portrayal, 50, 50, 400, 400)
 chart_celdas = mesa.visualization.ChartModule(
     [{"Label": "CeldasSucias", "Color": '#36A2EB', "label": "Celdas Sucias"}],
     50, 200,
@@ -67,8 +67,8 @@ model_params = {
         ["Fija", "Aleatoria"],
         "Selecciona la forma se posicionan los robots"
     ),
-    "M": 20,
-    "N": 20,
+    "M": 50,
+    "N": 50,
 }
 
 server = mesa.visualization.ModularServer(
