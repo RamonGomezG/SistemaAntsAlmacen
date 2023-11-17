@@ -2,10 +2,9 @@ import random
 
 import mesa
 
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador
+from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Estanteria
 
 MAX_NUMBER_ROBOTS = 10
-
 
 def agent_portrayal(agent):
     if isinstance(agent, RobotLimpieza):
@@ -17,8 +16,11 @@ def agent_portrayal(agent):
     elif isinstance(agent, Cargador):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                 "w": 0.9, "h": 0.9, "text_color": "Black", "text": "🔌"}
+    elif isinstance(agent, Estanteria):
+        return {"Shape": "rect", "Filled": "true", "Color": "yellow", "Layer": 0,
+                "w": 1, "h": 1, "text_color": "Black", "text": "🗄️"}
     elif isinstance(agent, Celda):
-        portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9, "text_color": "Black"}
+        portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 1, "h": 1, "text_color": "Black"}
         if agent.sucia:
             portrayal["Color"] = "white"
             portrayal["text"] = "🦠"
@@ -29,7 +31,7 @@ def agent_portrayal(agent):
 
 
 grid = mesa.visualization.CanvasGrid(
-    agent_portrayal, 50, 50, 400, 400)
+    agent_portrayal, 50, 50, 600, 600)
 chart_celdas = mesa.visualization.ChartModule(
     [{"Label": "CeldasSucias", "Color": '#36A2EB', "label": "Celdas Sucias"}],
     50, 200,

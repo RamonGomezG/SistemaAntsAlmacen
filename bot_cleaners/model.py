@@ -7,7 +7,6 @@ from mesa.datacollection import DataCollector
 import numpy as np
 import math
 
-
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
         super().__init__(unique_id, model)
@@ -34,6 +33,16 @@ class Cargador(Agent):
     def set_ocupada(self, value):
         self.ocupada = value
 
+class Estanteria(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.ocupada = True
+        self.contenido = 0
+    
+    def pos_estanteria(i, j):
+        pos_x = i
+        pos_y = j
+        return pos_x, pos_y
 
 class RobotLimpieza(Agent):
     def __init__(self, unique_id, model):
@@ -214,16 +223,12 @@ class Habitacion(Model):
                  porc_celdas_sucias: float = 0.6,
                  porc_muebles: float = 0.1,
                  modo_pos_inicial: str = 'Fija',
-                 time: int = 0,
-                 num_cuadrantesX: int = 2, 
-                 num_cuadrantesY: int = 2
+                 time: int = 0
                  ):
 
         self.num_agentes = num_agentes
         self.porc_celdas_sucias = porc_celdas_sucias
         self.porc_muebles = porc_muebles
-        self.num_cuadrantesX = num_cuadrantesX
-        self.num_cuadrantesY = num_cuadrantesY
         self.time = time
 
         self.grid = MultiGrid(M, N, False) #multigrid permite que haya varios agentes en la misma celda 
@@ -273,6 +278,15 @@ class Habitacion(Model):
             cargador = Cargador(f"{pos_x}", self)
             self.schedule.add(cargador)
             self.grid.place_agent(cargador, (pos_x, pos_y))
+        
+        # Posicionamiento de estanterias
+        ubicacion_estanterias_x = {8, 16, 35, 43}
+        ubicacion_estanterias_y = {10, 20, 30, 40}
+        for pos_x in ubicacion_estanterias_x:
+            for pos_y in ubicacion_estanterias_y:
+                estanteria = Estanteria(f"Estanteria_{pos_x}_{pos_y}", self)
+                self.schedule.add(estanteria)
+                self.grid.place_agent(estanteria, (pos_x, pos_y))
 
     def step(self):
         if self.todoLimpio():
@@ -312,7 +326,7 @@ def get_grid(model: Model) -> np.ndarray:
 
 
 def get_cargas(model: Model):
-    return [(agent.unique_id, agent.carga) for agent in model.schedule.agents]
+    return [(agent.unique_id, agent.carga) for agent in model.schedule.agents if isinstance(agent, Cargador)]
 
 
 def get_sucias(model: Model) -> int:
