@@ -7,6 +7,11 @@ from mesa.datacollection import DataCollector
 import numpy as np
 import math
 
+class Llegada(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.ocupada = False #Define si llegó un tipo de paquete
+        self.contiene = None #Tipo de paquete que llegó 
 
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
@@ -56,7 +61,7 @@ class RobotLimpieza(Agent):
     # cuando no tiene una celda sucia cerca se mueve de manera aleatoria (?)
     def seleccionar_nueva_pos(self, lista_de_vecinos):
         possible_pos = self.random.choice(lista_de_vecinos)
-        while possible_pos.ocupada == True: # aqui nos aseguramos que al buscar una posición random no tome alguna ya ocupada
+        while possible_pos.ocupada == True: # aqui nos aseguramos que al b|uscar una posición random no tome alguna ya ocupada
             possible_pos = self.random.choice(lista_de_vecinos)
         self.sig_pos = possible_pos.pos
 
@@ -111,18 +116,7 @@ class RobotLimpieza(Agent):
         print("YENDO A CARGAR...")
         x_cargador, y_cargador = self.destination
         print(f"DESTINO: {self.destination}")
-        # x, y = self.pos
-        # if x < x_cargador:
-        #     x = x + 1
-        # elif x > x_cargador:
-        #     x = x - 1
         
-        # if y < y_cargador:
-        #     y = y + 1
-        # elif y > y_cargador: 
-        #     y = y - 1
-                
-        # self.sig_pos = (x, y)
         # Dirigirse al cargador considerando al entorno
         vecinos = self.model.grid.get_neighbors(
                 self.pos, moore=True, include_center=False)
@@ -173,16 +167,8 @@ class RobotLimpieza(Agent):
             vecinos = self.model.grid.get_neighbors(
                 self.pos, moore=True, include_center=False)
 
-            for vecino in vecinos:
-                if isinstance(vecino, (Mueble, RobotLimpieza)):
-                    vecinos.remove(vecino)
+            self.seleccionar_nueva_pos(vecinos)
 
-            celdas_sucias = self.buscar_celdas_sucia(vecinos)
-
-            if len(celdas_sucias) == 0:
-                self.seleccionar_nueva_pos(vecinos)
-            else:
-                self.limpiar_una_celda(celdas_sucias)
         else: 
             self.carga_optima = False
             if self.destination == (0,0):
@@ -233,21 +219,21 @@ class Habitacion(Model):
 
         # Posicionamiento de muebles
         num_muebles = int(M * N * porc_muebles)
-        posiciones_muebles = self.random.sample(posiciones_disponibles, k=num_muebles)
+        #posiciones_muebles = self.random.sample(posiciones_disponibles, k=num_muebles)
 
-        for id, pos in enumerate(posiciones_muebles):
+        """for id, pos in enumerate(posiciones_muebles):
             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
             self.grid.place_agent(mueble, pos)
-            posiciones_disponibles.remove(pos)
+            posiciones_disponibles.remove(pos)"""
 
+        
         # Posicionamiento de celdas sucias
         self.num_celdas_sucias = int(M * N * porc_celdas_sucias)
         posiciones_celdas_sucias = self.random.sample(
             posiciones_disponibles, k=self.num_celdas_sucias)
 
         for id, pos in enumerate(posiciones_disponibles):
-            suciedad = pos in posiciones_celdas_sucias
-            celda = Celda(int(f"{num_agentes}{id}") + 1, self, suciedad)
+            celda = Celda(int(f"{num_agentes}{id}") + 1, self, False)
             self.grid.place_agent(celda, pos)
 
         # Posicionamiento de agentes robot
@@ -262,28 +248,34 @@ class Habitacion(Model):
             self.schedule.add(robot)
 
         self.datacollector = DataCollector(
-            model_reporters={"Grid": get_grid, "Cargas": get_cargas,
-                             "CeldasSucias": get_sucias},
+            model_reporters={"Grid": get_grid, "Cargas": get_cargas},
         )
 
-        # Posicionamiento de cargadores
-        ubicaciones_cargadores_x = {23, 24, 25, 26, 27}
+        #Posicionamiento de cargadores
+        ubicaciones_cargadores_x = {23, 24, 25, 26, 27, 28}
         for pos in ubicaciones_cargadores_x:
             pos_x, pos_y = Cargador.pos_cargador(pos, 49) #eliminar para que no haga llamadas innecesarias xd
             cargador = Cargador(f"{pos_x}", self)
             self.schedule.add(cargador)
             self.grid.place_agent(cargador, (pos_x, pos_y))
 
+        #Posicionamiento de tarima de llegada 
+        tarima_llegada = Llegada("Llegada", self)
+        self.grid.place_agent(tarima_llegada, (5, 48))
+
+
     def step(self):
+        """
         if self.todoLimpio():
             self.running = False  
             print("Todas las celdas se encuentran limpias, deteniendo simulación")
             print(f"Tiempo total de simulación: {self.time} segundos")
             print(f"Número de movimientos realizados por todos los agentes: {self.schedule.steps}")
         else: 
-            self.datacollector.collect(self)
-            self.schedule.step()
-            self.time += 1
+        """
+        self.datacollector.collect(self)
+        self.schedule.step()
+        self.time += 1
 
     def todoLimpio(self):
         for (content, pos) in self.grid.coord_iter():
@@ -314,21 +306,20 @@ def get_grid(model: Model) -> np.ndarray:
 def get_cargas(model: Model):
     return [(agent.unique_id, agent.carga) for agent in model.schedule.agents]
 
-
+"""
 def get_sucias(model: Model) -> int:
-    """
+    
     Método para determinar el número total de celdas sucias
     :param model: Modelo Mesa
     :return: número de celdas sucias
-    """
+    
     sum_sucias = 0
     for cell in model.grid.coord_iter():
         cell_content, pos = cell
         for obj in cell_content:
             if isinstance(obj, Celda) and obj.sucia:
-                sum_sucias += 1
-    return sum_sucias / model.num_celdas_sucias
-
+                sum_sucias += 1"""
+#    return sum_sucias / model.num_celdas_sucias
 
 def get_movimientos(agent: Agent) -> dict:
     if isinstance(agent, RobotLimpieza):

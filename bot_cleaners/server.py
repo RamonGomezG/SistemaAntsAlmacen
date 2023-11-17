@@ -2,21 +2,28 @@ import random
 
 import mesa
 
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador
+from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada
 
 MAX_NUMBER_ROBOTS = 10
 
 
 def agent_portrayal(agent):
     if isinstance(agent, RobotLimpieza):
-        return {"Shape": "circle", "Filled": "false", "Color": "black", "Layer": 1, "r": 1.0,
+        return {"Shape": "circle", "Filled": "false", "Color": "black", "Layer": 1, "r": 1,
                 "text": f"{agent.carga}", "text_color": "yellow"}
     elif isinstance(agent, Mueble):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                 "w": 0.9, "h": 0.9, "text_color": "Black", "text": "🪑"}
+    elif isinstance(agent, Llegada):
+        if agent.ocupada == False:
+            return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
+                    "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🔷"}
+        else:
+            return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
+                  "w": 0.4, "h": 0.4, "text_color": "Black", "text": "📦"}
     elif isinstance(agent, Cargador):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
-                "w": 0.9, "h": 0.9, "text_color": "Black", "text": "🔌"}
+                "w": 0.5, "h": 0.5, "text_color": "Black", "text": "🔌"}
     elif isinstance(agent, Celda):
         portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9, "text_color": "Black"}
         if agent.sucia:
@@ -30,11 +37,12 @@ def agent_portrayal(agent):
 
 grid = mesa.visualization.CanvasGrid(
     agent_portrayal, 50, 50, 400, 400)
+"""
 chart_celdas = mesa.visualization.ChartModule(
     [{"Label": "CeldasSucias", "Color": '#36A2EB', "label": "Celdas Sucias"}],
     50, 200,
     data_collector_name="datacollector"
-)
+)"""
 
 model_params = {
     "num_agentes": mesa.visualization.Slider(
@@ -44,14 +52,6 @@ model_params = {
         MAX_NUMBER_ROBOTS,
         1,
         description="Escoge cuántos robots deseas implementar en el modelo",
-    ),
-    "porc_celdas_sucias": mesa.visualization.Slider(
-        "Porcentaje de Celdas Sucias",
-        0.3,
-        0.0,
-        0.75,
-        0.05,
-        description="Selecciona el porcentaje de celdas sucias",
     ),
     "porc_muebles": mesa.visualization.Slider(
         "Porcentaje de Muebles",
@@ -72,6 +72,6 @@ model_params = {
 }
 
 server = mesa.visualization.ModularServer(
-    Habitacion, [grid, chart_celdas],
+    Habitacion, [grid],
     "botCleaner", model_params, 8521
 )
