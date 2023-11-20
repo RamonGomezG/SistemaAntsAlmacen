@@ -2,7 +2,7 @@ import random
 
 import mesa
 
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada
+from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada, Salida
 
 MAX_NUMBER_ROBOTS = 10
 
@@ -15,9 +15,16 @@ def agent_portrayal(agent):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                 "w": 0.9, "h": 0.9, "text_color": "Black", "text": "🪑"}
     elif isinstance(agent, Llegada):
-        if agent.ocupada == False:
+        if agent.sensor_paquete == False:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                     "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🔷"}
+        else:
+            return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
+                  "w": 0.4, "h": 0.4, "text_color": "Black", "text": "📦"}
+    elif isinstance(agent, Salida):
+        if agent.sensor_paquete == False:
+            return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
+                    "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🦠"}
         else:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                   "w": 0.4, "h": 0.4, "text_color": "Black", "text": "📦"}
@@ -73,5 +80,5 @@ model_params = {
 
 server = mesa.visualization.ModularServer(
     Habitacion, [grid],
-    "botCleaner", model_params, 8521
+    "Ants Almacenistas", model_params, 8521
 )
