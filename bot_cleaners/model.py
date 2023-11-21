@@ -360,13 +360,22 @@ class Habitacion(Model):
         # Posicionamiento de agentes robot
         if modo_pos_inicial == 'Aleatoria':
             pos_inicial_robots = self.random.sample(posiciones_disponibles, k=num_agentes)
-        else:  # 'Fija'
-            pos_inicial_robots = [(1, 1)] * num_agentes
+            for id in range(num_agentes):
+                robot = RobotLimpieza(id, self)
+                self.grid.place_agent(robot, pos_inicial_robots[id])
+                self.schedule.add(robot)
 
-        for id in range(num_agentes):
-            robot = RobotLimpieza(id, self)
-            self.grid.place_agent(robot, pos_inicial_robots[id])
-            self.schedule.add(robot)
+        else:  # 'Fija'
+            posicion_inicial = 49
+            cambio_en_posicion = 1
+            for id in range(num_agentes):
+                robot = RobotLimpieza(id, self)
+                self.grid.place_agent(robot, (posicion_inicial, 46))
+                posicion_inicial = posicion_inicial - cambio_en_posicion
+                if posicion_inicial == 44:
+                    posicion_inicial = 0
+                    cambio_en_posicion = -1
+                self.schedule.add(robot)
 
         self.datacollector = DataCollector(
             model_reporters={"Grid": get_grid, "Cargas": get_cargas},

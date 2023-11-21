@@ -70,7 +70,7 @@ model_params = {
     ),
     "modo_pos_inicial": mesa.visualization.Choice(
         "Posición Inicial de los Robots",
-        "Aleatoria",
+        "Fija",
         ["Fija", "Aleatoria"],
         "Selecciona la forma se posicionan los robots"
     ),
