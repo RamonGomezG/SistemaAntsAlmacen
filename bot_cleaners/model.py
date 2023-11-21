@@ -70,6 +70,16 @@ class Cargador(Agent):
     def set_ocupada(self, value):
         self.ocupada = value
 
+class Estanteria(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.ocupada = True
+        self.contenido = 0
+    
+    def pos_estanteria(i, j):
+        pos_x = i
+        pos_y = j
+        return pos_x, pos_y
 
 class RobotLimpieza(Agent):
     def __init__(self, unique_id, model):
@@ -388,6 +398,15 @@ class Habitacion(Model):
             cargador = Cargador(f"{pos_x}", self)
             self.schedule.add(cargador)
             self.grid.place_agent(cargador, (pos_x, pos_y))
+
+        # Posicionamiento de estanterias
+        ubicacion_estanterias_x = {8, 16, 35, 43}
+        ubicacion_estanterias_y = {10, 20, 30, 40}
+        for pos_x in ubicacion_estanterias_x:
+            for pos_y in ubicacion_estanterias_y:
+                estanteria = Estanteria(f"Estanteria_{pos_x}_{pos_y}", self)
+                self.schedule.add(estanteria)
+                self.grid.place_agent(estanteria, (pos_x, pos_y))
 
 
     def step(self):

@@ -2,7 +2,7 @@ import random
 
 import mesa
 
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada, Salida
+from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada, Salida, Estanteria
 
 MAX_NUMBER_ROBOTS = 10
 
@@ -31,6 +31,9 @@ def agent_portrayal(agent):
     elif isinstance(agent, Cargador):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                 "w": 0.5, "h": 0.5, "text_color": "Black", "text": "🔌"}
+    elif isinstance(agent, Estanteria):
+        return {"Shape": "rect", "Filled": "true", "Color": "yellow", "Layer": 0,
+                "w": 1, "h": 1, "text_color": "Black", "text": "🗄️"}
     elif isinstance(agent, Celda):
         portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9, "text_color": "Black"}
         if agent.sucia:
