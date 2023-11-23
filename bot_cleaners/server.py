@@ -2,7 +2,7 @@ import random
 
 import mesa
 
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada, Salida, Estanteria
+from .model import Habitacion, RobotLimpieza, Celda, Mueble, Cargador, Llegada, Salida, Estanteria, Sitio_espera
 
 MAX_NUMBER_ROBOTS = 10
 
@@ -11,29 +11,29 @@ def agent_portrayal(agent):
     if isinstance(agent, RobotLimpieza):
         return {"Shape": "circle", "Filled": "false", "Color": "black", "Layer": 1, "r": 1,
                 "text": f"{agent.carga}", "text_color": "yellow"}
-    elif isinstance(agent, Mueble):
+    elif isinstance(agent, Sitio_espera):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
-                "w": 0.9, "h": 0.9, "text_color": "Black", "text": "🪑"}
+                "w": 0.9, "h": 0.9, "text_color": "Black", "text": "💠"}
     elif isinstance(agent, Llegada):
         if agent.sensor_paquete == False:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
-                    "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🔷"}
+                    "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🟦"}
         else:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                   "w": 0.4, "h": 0.4, "text_color": "Black", "text": "📦"}
     elif isinstance(agent, Salida):
-        if agent.sensor_paquete == False:
+        if agent.sensor_pedido == False:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
-                    "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🦠"}
+                    "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🟩"}
         else:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
-                  "w": 0.4, "h": 0.4, "text_color": "Black", "text": "📦"}
+                  "w": 0.4, "h": 0.4, "text_color": "Black", "text": agent.pedido}
     elif isinstance(agent, Cargador):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                 "w": 0.5, "h": 0.5, "text_color": "Black", "text": "🔌"}
     elif isinstance(agent, Estanteria):
         return {"Shape": "rect", "Filled": "true", "Color": "yellow", "Layer": 0,
-                "w": 1, "h": 1, "text_color": "Black", "text": "🗄️"}
+                "w": 1, "h": 1, "text_color": "Black", "text": agent.tipo_estanteria}
     elif isinstance(agent, Celda):
         portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9, "text_color": "Black"}
         if agent.sucia:
@@ -46,7 +46,7 @@ def agent_portrayal(agent):
 
 
 grid = mesa.visualization.CanvasGrid(
-    agent_portrayal, 50, 50, 400, 400)
+    agent_portrayal, 50, 50, 550, 550)
 """
 chart_celdas = mesa.visualization.ChartModule(
     [{"Label": "CeldasSucias", "Color": '#36A2EB', "label": "Celdas Sucias"}],
