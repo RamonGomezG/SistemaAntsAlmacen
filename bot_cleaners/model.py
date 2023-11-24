@@ -3,9 +3,15 @@ from mesa.agent import Agent
 from mesa.space import MultiGrid
 from mesa.time import SimultaneousActivation
 from mesa.datacollection import DataCollector
+import random
 
 import numpy as np
 import math
+
+#Variables globales utilizadas para simular la logistica de llegada y salida de articulos 
+#Estos aluden a la restriccion de: Solo se ofertan los articulos que existen en almacén, por lo que 
+#si no hay un articulo N
+#No sale un articulo N
 
 class Llegada(Agent):
     def __init__(self, unique_id, model):
@@ -15,20 +21,31 @@ class Llegada(Agent):
         self.contiene = None #Tipo de paquete que llegó 
         self.recolector_id = None #Id del robot que esta más cerca del paquete que llegó y recogerá el paquete 
         self.min_dist_recolector = float('inf') #Variable que decidirá quien va por el paquete mediante un proceso de subasta por distancia 
-        self.paquetes_por_llegar = [1, 2, 3, 4] #Arreglo que contendrá la cantidad y tipo de paquete que irá llegando x steps {tipo:step}
-        self.horas_de_llegada = [10, 30, 60, 90]
+        self.paquetes_por_llegar = [] #Arreglo que contendrá la cantidad y tipo de paquete que irá llegando x steps {tipo:step}
+        self.horas_de_llegada = []
         self.paso = 0
 
     def step(self):
         self.paso += 1
+        self.llega_paquete()
+
+    def llega_paquete(self):
+        llega_paquete = random.randint(0, 10)
+        if llega_paquete == 2 and len(self.model.paquetes_en_almacen) < 16 and self.sensor_paquete == False:
+            #Se obtiene el tipo de paquete que llegara
+            paquete_entrante = random.randint(0,15)
+            while paquete_entrante in self.model.paquetes_en_almacen:
+                paquete_entrante = random.randint(0, 15)
+            self.paquetes_por_llegar.append(paquete_entrante)
+            print(f"Llega paquete {paquete_entrante}")
 
     def advance(self):
-        if self.paso in self.horas_de_llegada:
+        print(self.model.paquetes_en_almacen)
+        if len(self.paquetes_por_llegar) > 0:
             print('----Llamada de paquete entrante----')
-            self.horas_de_llegada.remove(self.paso)  # Remover el paso actual de las horas de llegada
             self.contiene = self.paquetes_por_llegar.pop(0)  # Remover y obtener el primer paquete de la lista
             self.sensor_paquete = True
-        
+            
         x, y = self.pos
 
         # Obtener todos los agentes en la misma celda
@@ -37,7 +54,6 @@ class Llegada(Agent):
         ocupada = False
         # Iterar sobre los agentes en la misma celda
         for otro_agente in agentes_en_misma_celda:
-            print(otro_agente)
             # Verificar si el otro agente no es el mismo que el agente actual
             if isinstance(otro_agente, RobotLimpieza):
                 ocupada = True
@@ -49,7 +65,7 @@ class Llegada(Agent):
 
     def liberar_tarima(self):
         self.sensor_paquete = False
-        self.contiene = None
+        #self.contiene = None
         self.recolector_id = None
         self.min_dist_recolector = float('inf')
 
@@ -59,8 +75,7 @@ class Salida(Agent):
         self.ocupada = False
         self.sensor_pedido = False #Define si llegó un tipo de paquete
         self.pedido = None #Tipo de paquete que llegó 
-        self.pedidos = [1, 2, 3, 4] #Arreglo que contendrá la cantidad y tipo de paquete que irá llegando x steps {tipo:step}
-        self.horas_de_salida = [60, 110, 160, 210]
+        self.pedidos = [] #Arreglo que contendrá la cantidad y tipo de paquete que irá llegando x steps {tipo:step}
         self.recolector_id = None #Id del robot que esta más cerca del paquete que llegó y recogerá el paquete 
         self.min_dist_recolector = float('inf') #Variable que decidirá quien va por el paquete media
         self.paso = 0 
@@ -68,6 +83,7 @@ class Salida(Agent):
         
     def step(self):
         self.paso += 1
+        self.llega_pedido()
 
         x, y = self.pos
 
@@ -77,7 +93,6 @@ class Salida(Agent):
         ocupada = False
         # Iterar sobre los agentes en la misma celda
         for otro_agente in agentes_en_misma_celda:
-            print(otro_agente)
             # Verificar si el otro agente no es el mismo que el agente actual
             if isinstance(otro_agente, RobotLimpieza):
                 ocupada = True
@@ -88,11 +103,20 @@ class Salida(Agent):
             self.ocupada = False
 
     def advance(self):
-        if self.paso in self.horas_de_salida:
+        if len(self.pedidos) > 0 and self.sensor_pedido != True:
             print('----Llamada de pedido----')
-            self.horas_de_salida.remove(self.paso)  # Remover el paso actual de las horas de llegada
             self.pedido = self.pedidos.pop(0)  # Remover y obtener el primer paquete de la lista
             self.sensor_pedido = True
+
+    def llega_pedido(self):
+        llega_pedido = random.randint(0, 10)
+        if llega_pedido == 2 and len(self.model.paquetes_en_almacen) > 4 and self.pedido == None and self.sensor_pedido == False:
+            #Se obtiene el tipo de pedido que saldra
+            pedido_saliente = random.randint(0,15)
+            while pedido_saliente not in self.model.paquetes_en_almacen:
+                pedido_saliente = random.randint(0, 15)
+            self.pedidos.append(pedido_saliente)
+            print(f"Sale pedido {pedido_saliente}")
 
     def liberar_tarima(self):
         self.sensor_pedido = False
@@ -101,6 +125,8 @@ class Salida(Agent):
 
     def recibir_pedido(self, pedido):
         self.pedidos_recibidos.append(pedido)
+        self.pedido = None
+        self.model.paquetes_en_almacen.remove(pedido)
 
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
@@ -117,7 +143,6 @@ class Celda(Agent):
         ocupada = False
         # Iterar sobre los agentes en la misma celda
         for otro_agente in agentes_en_misma_celda:
-            print(otro_agente)
             # Verificar si el otro agente no es el mismo que el agente actual
             if isinstance(otro_agente, RobotLimpieza):
                 ocupada = True
@@ -231,8 +256,10 @@ class RobotLimpieza(Agent):
     def tomar_paquete(self):
         lista_tarima_llegada = [agent for agent in self.model.schedule.agents if isinstance(agent, Llegada)] #Arreglo de entrada para la lista de cargadores
         for tarima_llegada in lista_tarima_llegada:
+            tarima_llegada.unique_id
             tipo_paquete = tarima_llegada.contiene
             self.contiene = tipo_paquete
+            print(f'{self.contiene} unidad {self.unique_id}')
             #funcion que define el detino_paquete a la posicion de la estanteria que corresponde
             self.destino_paquete = self.buscar_estanteria(self.contiene)
             #libera la tarima
@@ -276,7 +303,7 @@ class RobotLimpieza(Agent):
             if tarima_llegada.sensor_paquete == True:
                 distancia_a_llegada = self.distancia_euclidiana(self.pos, tarima_llegada.pos)
                 if tarima_llegada.min_dist_recolector > distancia_a_llegada:
-                    print(f'{self.unique_id} ofertando...')
+                    #print(f'{self.unique_id} ofertando...')
                     tarima_llegada.min_dist_recolector = distancia_a_llegada
                     tarima_llegada.recolector_id = self.unique_id
 
@@ -297,7 +324,7 @@ class RobotLimpieza(Agent):
         lista_tarima_salida = [agent for agent in self.model.schedule.agents if isinstance(agent, Salida)] #Arreglo de entrada para la lista de cargadores
         for tarima in lista_tarima_salida:
             tarima.recibir_pedido(self.contiene)
-            self.contiene = None
+            self.contiene = None 
             self.busca = None
             self.estanteria_destino = None
             self.esta_entregando_pedido = False
@@ -316,19 +343,17 @@ class RobotLimpieza(Agent):
             #     print('No hay paquete que recoger...')           
 
     def ir_por_paquete(self):
-        #print(f'Robot {self.unique_id} yendo por paquete...')
-        x_cargador, y_cargador = self.destino_paquete
-        #print(f"DESTINO: {self.destino_paquete}")
-
         # Dirigirse al cargador considerando al entorno
         vecinos = self.model.grid.get_neighbors(
                 self.pos, moore=True, include_center=False)
+
+        if self.destino_paquete == None:
+            print(f'{self.unique_id} es el erroneo')
 
         for vecino in vecinos:
             if vecino.ocupada == True and not(isinstance(vecino, Estanteria)):
                 vecinos.remove(vecino)
                 
-        celdas = list()
         minDist = float('inf')
         for vecino in vecinos:
             # Verificar si la celda contiene un RobotBarredora o Estanteria con tipo incorrecto
@@ -341,6 +366,8 @@ class RobotLimpieza(Agent):
     def almacenar_paquete(self):
         lista_estanterias = [agent for agent in self.model.schedule.agents if isinstance(agent, Estanteria) and agent.tipo_estanteria == self.contiene]
         for estanteria in lista_estanterias: 
+            if self.contiene not in self.model.paquetes_en_almacen:
+                self.model.paquetes_en_almacen.append(self.contiene)
             self.contiene = None
             self.esta_almacenando = False
             self.estanteria_destino = None
@@ -374,11 +401,6 @@ class RobotLimpieza(Agent):
         # print(self.destination)
 
     def ir_a_cargador(self):
-        # cambiarlo a que dentro de sus vecinos escoja la celda desocupada más cercana al cargador y se dirija hacia alla
-        #print("YENDO A CARGAR...")
-        x_cargador, y_cargador = self.destination
-        #print(f"DESTINO: {self.destination}")
-        
         # Dirigirse al cargador considerando al entorno
         vecinos = self.model.grid.get_neighbors(
                 self.pos, moore=True, include_center=False)
@@ -387,13 +409,13 @@ class RobotLimpieza(Agent):
             if vecino.ocupada == True:
                 vecinos.remove(vecino)
 
-        celdas = list()
         minDist = float('inf')
         for vecino in vecinos:
-            dist = self.distancia_euclidiana(vecino.pos, self.destination)
-            if dist < minDist:
-                minDist = dist
-                self.sig_pos = vecino.pos
+            if not isinstance(vecino, (RobotLimpieza, Estanteria)):
+                dist = self.distancia_euclidiana(vecino.pos, self.destination)
+                if dist < minDist:
+                    minDist = dist
+                    self.sig_pos = vecino.pos
         
 
         # print(f"SIGUIENTE PASO: {self.sig_pos}")
@@ -436,11 +458,11 @@ class RobotLimpieza(Agent):
                 otro_agente.seleccionado = False
                 
     def ir_a_formacion(self):
-        print(f'{self.unique_id} yendo a formaciòn')
+        # print(f'{self.unique_id} yendo a formaciòn')
         lista_sitios_espera = [agent for agent in self.model.schedule.agents if isinstance(agent, Sitio_espera) and agent.disponible == True] #Arreglo de entrada para la lista de cargadores
         sitios = list()
         for sitio in lista_sitios_espera:
-            print(sitio.unique_id)
+            # print(sitio.unique_id)
             sitios.append(sitio)
         #     print(sitio.unique_id)
         #     if sitio.unique_id < max:
@@ -583,6 +605,7 @@ class Habitacion(Model):
         self.num_cuadrantesX = num_cuadrantesX
         self.num_cuadrantesY = num_cuadrantesY
         self.time = time
+        self.paquetes_en_almacen = []
 
         self.grid = MultiGrid(M, N, False) #multigrid permite que haya varios agentes en la misma celda 
         self.schedule = SimultaneousActivation(self)

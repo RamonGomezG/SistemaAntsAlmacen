@@ -10,7 +10,7 @@ MAX_NUMBER_ROBOTS = 10
 def agent_portrayal(agent):
     if isinstance(agent, RobotLimpieza):
         return {"Shape": "circle", "Filled": "false", "Color": "black", "Layer": 1, "r": 1,
-                "text": f"{agent.carga}", "text_color": "yellow"}
+                "text": f"{agent.unique_id}", "text_color": "yellow"}
     elif isinstance(agent, Sitio_espera):
         return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
                 "w": 0.9, "h": 0.9, "text_color": "Black", "text": "💠"}
@@ -20,7 +20,7 @@ def agent_portrayal(agent):
                     "w": 0.4, "h": 0.4, "text_color": "Black", "text": "🟦"}
         else:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
-                  "w": 0.4, "h": 0.4, "text_color": "Black", "text": "📦"}
+                  "w": 0.4, "h": 0.4, "text_color": "Black", "text": agent.contiene}
     elif isinstance(agent, Salida):
         if agent.sensor_pedido == False:
             return {"Shape": "rect", "Filled": "true", "Color": "white", "Layer": 0,
