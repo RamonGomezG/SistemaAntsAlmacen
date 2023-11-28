@@ -223,6 +223,7 @@ class RobotLimpieza(Agent):
         self.ocupada = True
         self.sig_pos = None
         self.movimientos = 0
+        self.movimientos_totales = 0
         self.carga = 100
         self.recarga = 0
         self.contiene = None
@@ -318,7 +319,9 @@ class RobotLimpieza(Agent):
                 self.busca = tarima.pedido
                 self.estanteria_destino = tarima.pedido
                 self.destino_paquete = self.buscar_estanteria(self.busca)
+                self.model.total_paquetes_entregados += 1
                 print(f'Robot {self.unique_id} escogido para despachar pedido')
+                print("Paquetes entregados")
             
     def entregar_pedido(self):
         lista_tarima_salida = [agent for agent in self.model.schedule.agents if isinstance(agent, Salida)] #Arreglo de entrada para la lista de cargadores
@@ -338,7 +341,9 @@ class RobotLimpieza(Agent):
                 self.esta_esperando = False
                 self.destino_paquete = tarima.pos
                 self.estanteria_destino = tarima.contiene
+                self.model.total_paquetes_recogidos += 1
                 print(f'Robot {self.unique_id} escogido para recoger paquete')  
+                print("Paquetes recogidos")
             # else: 
             #     print('No hay paquete que recoger...')           
 
@@ -436,6 +441,7 @@ class RobotLimpieza(Agent):
                     
             self.carga_optima = True
             self.destination = (0,0)
+            self.model.total_recargas += 1
             x, y = self.pos
             # agentes_en_celda = self.agentes_en_posicion(x, y)
             # cargador = [agent for agent in agentes_en_celda if isinstance(agent, Cargador)]
@@ -581,6 +587,7 @@ class RobotLimpieza(Agent):
         if self.esta_esperando == False:
             if self.pos != self.sig_pos:
                 self.movimientos += 1
+                self.movimientos_totales += 1
 
         if self.carga > 0:
             if self.esta_cargando == False and self.esta_esperando == False:
@@ -596,7 +603,10 @@ class Habitacion(Model):
                  modo_pos_inicial: str = 'Fija',
                  time: int = 0,
                  num_cuadrantesX: int = 2, 
-                 num_cuadrantesY: int = 2
+                 num_cuadrantesY: int = 2,
+                 total_recargas: int = 0,
+                 total_paquetes_recogidos: int = 0,
+                 total_paquetes_entregados: int = 0,
                  ):
 
         self.num_agentes = num_agentes
@@ -606,6 +616,9 @@ class Habitacion(Model):
         self.num_cuadrantesY = num_cuadrantesY
         self.time = time
         self.paquetes_en_almacen = []
+        self.total_recargas = total_recargas
+        self.total_paquetes_recogidos = total_paquetes_recogidos
+        self.total_paquetes_entregados = total_paquetes_entregados
 
         self.grid = MultiGrid(M, N, False) #multigrid permite que haya varios agentes en la misma celda 
         self.schedule = SimultaneousActivation(self)
@@ -684,6 +697,18 @@ class Habitacion(Model):
         self.datacollector = DataCollector(
             model_reporters={"Grid": get_grid, "Cargas": get_cargas},
         )
+        self.datacollectorMovimientosTiempo = DataCollector(
+            model_reporters={"Grid": get_grid, "Tiempo": get_tiempo, "Movimientos": get_movimientos_totales},
+        )
+        self.datacollectorRecargasTiempo = DataCollector(
+            model_reporters={"Grid": get_grid, "Tiempo": get_tiempo, "Recargas": get_recargas},
+        )
+        self.datacollectorPaquetesRecogidosTiempo = DataCollector(
+            model_reporters={"Grid": get_grid, "Tiempo": get_tiempo, "Paquetes Recogidos": get_paquetes_recogidos},
+        )
+        self.datacollectorPaquetesEntregadosTiempo = DataCollector(
+            model_reporters={"Grid": get_grid, "Tiempo": get_tiempo, "Paquetes Entregados": get_paquetes_entregados},
+        )
 
         #Posicionamiento de cargadores
         ubicaciones_cargadores_x = {23, 24, 25, 26, 27, 28}
@@ -697,6 +722,10 @@ class Habitacion(Model):
     def step(self):
         self.running = True
         self.datacollector.collect(self)
+        self.datacollectorMovimientosTiempo.collect(self)
+        self.datacollectorRecargasTiempo.collect(self)
+        self.datacollectorPaquetesRecogidosTiempo.collect(self)
+        self.datacollectorPaquetesEntregadosTiempo.collect(self)
         self.schedule.step()
         self.time += 1
 
@@ -733,3 +762,20 @@ def get_movimientos(agent: Agent) -> dict:
         return {agent.unique_id: agent.movimientos}
     # else:
     #    return 0
+
+def get_tiempo(model: Model):
+    return model.schedule.steps
+
+def get_movimientos_totales(self):
+    total_movimientos = sum(agent.movimientos_totales for agent in self.schedule.agents if isinstance(agent, RobotLimpieza))
+    return total_movimientos 
+
+def get_recargas(self):
+    return self.total_recargas
+
+def get_paquetes_recogidos(self):
+    return self.total_paquetes_recogidos
+
+def get_paquetes_entregados(self):
+    return self.total_paquetes_entregados
+
